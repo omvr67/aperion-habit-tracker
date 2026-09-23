@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Star, X } from "lucide-react";
 
 import { EFFORT_OPTIONS } from "@/lib/effort";
+import { useProjects } from "@/lib/data/projects";
 import {
   useLinkMutations,
   useLinks,
@@ -13,6 +14,7 @@ import {
 
 export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void }) {
   const update = useUpdateTask();
+  const projects = useProjects();
   const [title, setTitle] = useState(task.title);
   const [notes, setNotes] = useState(task.notes ?? "");
 
@@ -74,6 +76,24 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
             />
           ))}
         </div>
+      </section>
+
+      <section className="mt-5">
+        <p className="text-xs text-muted-foreground">Project</p>
+        <select
+          value={task.project_id ?? ""}
+          onChange={(e) =>
+            update.mutate({ id: task.id, patch: { project_id: e.target.value || null } })
+          }
+          className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-ring"
+        >
+          <option value="">No project</option>
+          {projects.data?.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
       </section>
 
       <section className="mt-5">

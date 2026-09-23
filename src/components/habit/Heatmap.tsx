@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { formatShortDate, keyToDate } from "@/lib/habits/date";
-import type { DayActivity } from "@/lib/habits/types";
+import { formatShortDate } from "@/lib/heatmap";
+import type { HeatmapDay } from "@/lib/heatmap";
 
 const LEVEL_CLASS: Record<number, string> = {
   0: "bg-heat-0",
@@ -14,7 +14,7 @@ const LEVEL_CLASS: Record<number, string> = {
 const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 interface Props {
-  weeks: DayActivity[][];
+  weeks: (HeatmapDay | null)[][];
   selected: string;
   onSelect: (date: string) => void;
 }
@@ -28,12 +28,14 @@ export function Heatmap({ weeks, selected, onSelect }: Props) {
   }, [weeks.length]);
 
   const monthLabels = weeks.map((week, i) => {
-    const first = week[0];
+    const first = week.find((d) => d !== null);
     if (!first) return null;
-    const date = keyToDate(first.date);
-    const prev = i > 0 ? keyToDate(weeks[i - 1]![0]!.date) : null;
-    if (prev && prev.getMonth() === date.getMonth()) return null;
+    const date = new Date(first.date + "T00:00:00");
+    const prev = i > 0 ? weeks[i - 1]?.find((d) => d !== null) : null;
+    if (prev && new Date(prev.date + "T00:00:00").getMonth() === date.getMonth()) return null;
     if (i === weeks.length - 1) return null;
+    const next = weeks[i + 1]?.find((d) => d !== null);
+    if (i === 0 && next && new Date(next.date + "T00:00:00").getMonth() !== date.getMonth()) return null;
     return date.toLocaleDateString(undefined, { month: "short" });
   });
 
@@ -64,8 +66,7 @@ export function Heatmap({ weeks, selected, onSelect }: Props) {
           <div className="flex gap-[3px]">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
-                {Array.from({ length: 7 }).map((_, di) => {
-                  const day = week.find((d) => keyToDate(d.date).getDay() === di);
+                {week.map((day, di) => {
                   if (!day) return <div key={di} className="h-[13px] w-[13px]" />;
                   const isSelected = day.date === selected;
                   return (
@@ -73,14 +74,14 @@ export function Heatmap({ weeks, selected, onSelect }: Props) {
                       key={di}
                       type="button"
                       onClick={() => onSelect(day.date)}
-                      title={`${formatShortDate(day.date)} — ${day.effort} effort · ${day.taskCount} task${day.taskCount === 1 ? "" : "s"}${day.capped ? " · cap reached" : ""}`}
-                      aria-label={`${formatShortDate(day.date)}, ${day.effort} effort, ${day.taskCount} tasks`}
+                      title={`${formatShortDate(day.date)} — ${day.points} pts · ${day.taskCount} task${day.taskCount === 1 ? "" : "s"}`}
+                      aria-label={`${formatShortDate(day.date)}, ${day.points} points, ${day.taskCount} tasks`}
                       aria-pressed={isSelected}
                       className={`h-[13px] w-[13px] rounded-[3px] transition-all duration-150 hover:scale-[1.35] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${LEVEL_CLASS[day.level]} ${
                         isSelected
                           ? "ring-2 ring-foreground/50 ring-offset-1 ring-offset-background"
                           : ""
-                      } ${day.capped ? "shadow-[0_0_0_1px_var(--heat-4)]" : ""}`}
+                      }`}
                     />
                   );
                 })}

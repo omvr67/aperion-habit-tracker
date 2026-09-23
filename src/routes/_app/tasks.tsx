@@ -11,6 +11,7 @@ import {
   useTasks,
   type Task,
 } from "@/lib/data/tasks";
+import { useProjects, type Project } from "@/lib/data/projects";
 
 export const Route = createFileRoute("/_app/tasks")({
   head: () => ({
@@ -144,6 +145,8 @@ function TaskList({
   onToggle: (task: Task) => void;
   onDelete: (id: string) => void;
 }) {
+  const { data: projects = [] } = useProjects();
+  const byId = new Map<string, Project>(projects.map((p) => [p.id, p]));
   return (
     <ul className="space-y-1">
       {tasks.map((task) => (
@@ -164,6 +167,12 @@ function TaskList({
           <span className={`min-w-0 flex-1 truncate text-sm ${task.completed ? "text-muted-foreground line-through" : ""}`}>
             {task.title}
           </span>
+          {task.project_id && byId.get(task.project_id) && (
+            <span className="flex max-w-[9rem] items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" style={byId.get(task.project_id)!.color ? { background: byId.get(task.project_id)!.color! } : undefined} />
+              <span className="truncate">{byId.get(task.project_id)!.name}</span>
+            </span>
+          )}
           {task.effort != null && (
             <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
               {effortLabel(task.effort)}
